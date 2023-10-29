@@ -1,0 +1,31 @@
+—UCL table
+
+CREATE   TABLE   IF   NOT   EXISTS  User_UCL AS
+SELECT b.card_id, (avg(b.amount) + 3*(stddev(b.amount))) 
+FROM
+(
+   SELECT card_id, amount, transaction_dt,
+          row_number() over (partition by card_id order by transaction_dt desc) r
+   FROM card_transactions where status like ‘GENUINE’ 
+) b
+WHERE r <= 10
+GROUP BY b.card_id;
+
+
+— user look up table
+
+CREATE   TABLE   IF   NOT   EXISTS  User_lookup AS
+
+SELECT card_transactions.card_id, card_transactions.postcode,card_transactions.transaction_dt,user_ucl.`_c1`
+FROM card_transactions
+  INNER JOIN (SELECT card_id, MAX(transaction_dt) As MaxDate FROM card_transactions  GROUP BY card_id) B
+    ON card_transactions.card_id = B.card_id AND card_transactions.transaction_dt = B.MaxDate
+Join user_ucl
+ON card_transactions.card_id = user_ucl.card_id
+
+
+
+
+
+
+    

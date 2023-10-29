@@ -1,0 +1,47 @@
+CAPSTONE Project
+
+Task 1 : Below is the query required for creating a table card transaction in Hive
+
+CREATE   TABLE   IF   NOT   EXISTS  card_transactions
+(card_id BIGINT ,
+member_id BIGINT,
+amount BIGINT,
+postcode BIGINT,
+pos_id BIGINT,
+transaction_dt string,
+status string)
+ROW   FORMAT   DELIMITED
+FIELDS   TERMINATED   BY   ‘,’ STORED   AS  TEXTFILE
+tblproperties(“skip.header.line.count”=“1”);
+
+After creating the table we will load the data using below command in hive:
+
+LOAD   DATA  INPATH  ‘/user/ec2-user/input/card_transactions.csv’
+overwrite INTO   TABLE  card_transactions;
+
+Below is the query for  creating staging table to add unique row to identify a particular record
+
+CREATE TABLE card_transactions_staging
+AS
+SELECT 
+  regexp_replace(reflect(‘java.util.UUID’,’randomUUID’), ‘-‘, ‘’) as rowid,
+  *
+FROM card_transactions
+
+
+Creating a Hive table and linked Hbase table
+create  table IF not exists card_transaction_hive
+(row_key string,card_id BIGINT ,member_id BIGINT,amount BIGINT,postcode BIGINT,pos_id BIGINT,transaction_dt string,status string)
+STORED BY ‘org.apache.hadoop.hive.hbase.HBaseStorageHandler’
+WITH SERDEPROPERTIES (“hbase.columns.mapping” = “:key,cf:card_id,cf:member_id,cf:amount,cf:postcode,cf:pos_id,cf:transaction_dt,cf:status”)
+TBLPROPERTIES (“hbase.table.name” = “card_transaction_hbase”);
+
+
+Loading data into HBase table
+
+INSERT OVERWRITE TABLE card_transaction_hive  SELECT
+rowid,card_id ,member_id,amount,postcode,pos_id,string(unix_timestamp(transaction_dt,’dd-MM-yyyy HH:mm:ss’)),status 
+FROM card_transactions_staging;
+
+
+

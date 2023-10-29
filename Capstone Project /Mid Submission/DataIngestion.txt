@@ -1,0 +1,39 @@
+CAPSTONE Project
+
+
+
+Loading data into HDFS from AWS RDS
+sqoop import --connect jdbc:mysql://upgradawsrds.cpclxrkdvwmz.us-east-1.rds.amazonaws.com:3306/cred_financials_data --username upgraduser --password upgraduser --table card_member --warehouse-dir input/tables/navjot/
+
+
+sqoop import --connect jdbc:mysql://upgradawsrds.cpclxrkdvwmz.us-east-1.rds.amazonaws.com:3306/cred_financials_data --username upgraduser --password upgraduser --table member_score --warehouse-dir input/tables/navjot/
+
+
+Creating Hive table to load the data loaded in previous step
+CREATE   TABLE   IF   NOT   EXISTS  card_member
+(card_id BIGINT ,
+member_id BIGINT,
+member_joining_dt string,
+card_purchase_dt string,
+country string,
+city string)
+ROW   FORMAT   DELIMITED
+FIELDS   TERMINATED   BY   ‘,’ STORED   AS  TEXTFILE
+tblproperties(“skip.header.line.count”=“1”);
+
+
+CREATE   TABLE   IF   NOT   EXISTS  member_score
+(member_id BIGINT ,
+score BIGINT)
+ROW   FORMAT   DELIMITED
+FIELDS   TERMINATED   BY   ‘,’ STORED   AS  TEXTFILE
+tblproperties(“skip.header.line.count”=“1”);
+
+
+Loading data into Hive table
+LOAD   DATA  INPATH  ‘/user/root/input/tables/navjot/card_member’
+overwrite INTO   TABLE  card_member;
+
+LOAD   DATA  INPATH  ‘/user/root/input/tables/navjot/member_score’
+overwrite INTO   TABLE  member_score;
+
